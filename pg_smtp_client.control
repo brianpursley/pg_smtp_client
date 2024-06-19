@@ -1,0 +1,5 @@
+comment = 'PostgreSQL extension to send email using SMTP'
+default_version = '@CARGO_VERSION@'
+module_pathname = '$libdir/pg_smtp_client'
+relocatable = false
+superuser = false
