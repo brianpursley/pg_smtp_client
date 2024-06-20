@@ -21,18 +21,19 @@ You use the `send_email` function to send an email. The function takes the follo
 | smtp_username | text | The username for the SMTP server |
 | smtp_password | text | The password for the SMTP server |
 
-### Environment Variable Configuration
+### System-wide default configuration
 
-You can configure default values for some of the parameters using environment variables. The following environment variables are supported:
+You can configure default values for some of the parameters like this:
 
-| Environment Variable | Description |
-| --- | --- |
-| SMTP_SERVER | The default SMTP server to use |
-| SMTP_PORT | The default port of the SMTP server |
-| SMTP_TLS | Whether to use TLS |
-| SMTP_USERNAME | The default username for the SMTP server |
-| SMTP_PASSWORD | The default password for the SMTP server |
-| SMTP_FROM | The default from email address |
+```
+ALTER SYSTEM SET smtp_client.server TO 'smtp.example.com';
+ALTER SYSTEM SET smtp_client.server TO 587;
+ALTER SYSTEM SET smtp_client.tls TO true;
+ALTER SYSTEM SET smtp_client.username TO 'MySmtpUsername';
+ALTER SYSTEM SET smtp_client.password TO 'MySmtpPassword';
+ALTER SYSTEM SET smtp_client.from TO 'from@example.com';
+SELECT pg_reload_conf();
+```
 
 ### Examples
 
@@ -45,7 +46,7 @@ Send an email:
 SELECT * FROM smtp.send_email('recipient@example.com', 'test subject', 'test body', false, null, null, 'from@example.com', 'smtp.example.com', 587, true, 'smtp_username', 'smtp_password');
 ```
 
-Send an email using default values configured by environment variables:
+Send an email using configured default values:
 ```sql
 SELECT * FROM smtp.send_email('recipient@example.com', 'test subject', 'test body');
 ```
