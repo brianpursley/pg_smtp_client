@@ -1,15 +1,15 @@
 PYTHON := $(shell command -v python3 || command -v python || echo "none")
 PIP3 := $(shell command -v pip3 || command -v pip || echo "none")
 
-.PHONY: build
-build:
-	@command -v trunk >/dev/null 2>&1 || { echo >&2 "Error: trunk is required (cargo install pg-trunk)."; exit 1; }
-	trunk build
-
 .PHONY: init
 init:
-	cargo install --locked cargo-pgrx 
+	cargo install cargo-pgrx pg-trunk
 	cargo pgrx init --pg16 download
+
+.PHONY: lint
+lint:
+	cargo fmt --check
+	cargo clippy
 
 .PHONY: test
 test:
@@ -19,6 +19,10 @@ test:
 	trap 'kill `cat /tmp/smtpd.pid`' EXIT; \
 	$(PYTHON) -m aiosmtpd -n & echo $$! > /tmp/smtpd.pid; \
 	cargo pgrx test pg16
+
+.PHONY: build
+build:
+	trunk build
 
 .PHONY: run
 run:

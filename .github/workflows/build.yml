@@ -38,12 +38,8 @@ jobs:
             ~/.cargo/git/db/
             target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-      - run: cargo fmt --check
-      - run: cargo install --locked cargo-pgrx 
-      - run: cargo pgrx init --pg16 download
-      - run: cargo clippy
-      - run: pip install aiosmtpd
-      - run: trap 'kill `cat /tmp/smtpd.pid`' EXIT; python -m aiosmtpd -n & echo $$! > /tmp/smtpd.pid; cargo pgrx test pg16
-      - run: cargo install pg-trunk
-      - run: trunk build
+      - run: make init
+      - run: make lint
+      - run: make test
+      - run: make build
  

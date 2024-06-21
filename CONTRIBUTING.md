@@ -1,6 +1,12 @@
 # pg_smtp_client
 
-## Running Locally
+## Setup
+
+```shell
+make init
+```
+
+## Running the Extension Locally
 
 ```shell
 make run
