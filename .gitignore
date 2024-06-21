@@ -3,5 +3,5 @@
 /target
 *.iml
 **/*.rs.bk
-/scratch
+.scratch
 .trunk
