@@ -1,7 +1,7 @@
 PGRX_POSTGRES ?= pg16
 
 build:
-	cargo build
+	trunk build
 
 init:
 	cargo install --locked cargo-pgrx 

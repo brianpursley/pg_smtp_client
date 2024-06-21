@@ -1,0 +1,13 @@
+[extension]
+name = "pg_smtp_client"
+repository = "https://github.com/brianpursley/pg_smtp_client"
+license = "MIT"
+description = "PostgreSQL extension to send email using SMTP"
+homepage = "https://github.com/brianpursley/pg_smtp_client"
+documentation = "https://github.com/brianpursley/pg_smtp_client"
+categories = ["tooling_admin"]
+version = "0.1.0"
+
+[build]
+postgres_version = "16"
+platform = "linux/amd64"
