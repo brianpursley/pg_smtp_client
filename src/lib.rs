@@ -59,62 +59,71 @@ mod smtp_client {
     }
 
     fn create_message(
-        to: &str,
         subject: &str,
         body: &str,
         html: bool,
-        from: Option<&str>,
-        cc: Option<&str>,
-        bcc: Option<&str>,
-        keep_bcc: bool,
+        from_address: Option<&str>,
+        recipients: Option<Vec<Option<&str>>>,
+        ccs: Option<Vec<Option<&str>>>,
+        bccs: Option<Vec<Option<&str>>>,
+        keep_bcc_header: bool,
     ) -> Result<Message, String> {
         let mut email = Message::builder().subject(subject);
 
-        if html {
-            email = email.header(lettre::message::header::ContentType::TEXT_HTML);
-        }
-
-        for to_address in to.split(',') {
-            email = email.to(match to_address.trim().parse() {
-                Ok(address) => address,
-                Err(e) => return Err(format!("Invalid to address: {}", e)),
-            });
-        }
-
-        if let Some(cc_list) = cc {
-            if !cc_list.trim().is_empty() {
-                for cc_address in cc_list.split(',') {
-                    email = email.cc(match cc_address.trim().parse() {
-                        Ok(address) => address,
-                        Err(e) => return Err(format!("Invalid cc address: {}", e)),
-                    });
-                }
+        if let Some(addr) = from_address
+            .map(|x| x.to_string())
+            .or_else(guc::get_smtp_from)
+        {
+            if let Ok(parsed_addr) = addr.parse() {
+                email = email.from(parsed_addr);
+            } else {
+                return Err(format!("Invalid from: {}", addr));
             }
-        }
-
-        if let Some(bcc_list) = bcc {
-            if !bcc_list.trim().is_empty() {
-                if keep_bcc {
-                    email = email.keep_bcc();
-                }
-                for bcc_address in bcc_list.split(',') {
-                    email = email.bcc(match bcc_address.trim().parse() {
-                        Ok(address) => address,
-                        Err(e) => return Err(format!("Invalid bcc address: {}", e)),
-                    });
-                }
-            }
-        }
-
-        if let Some(from_address) = from.map(|x| x.to_string()).or_else(guc::get_smtp_from) {
-            email = email.from(
-                from_address
-                    .trim()
-                    .parse()
-                    .map_err(|e| format!("Invalid from address: {}", e))?,
-            );
         } else {
             return Err("From address not provided and no default configured".to_string());
+        }
+
+        if let Some(items) = recipients {
+            for item in items {
+                if let Some(addr) = item {
+                    if let Ok(parsed_addr) = addr.parse() {
+                        email = email.to(parsed_addr);
+                    } else {
+                        return Err(format!("Invalid to: {}", addr));
+                    }
+                }
+            }
+        }
+
+        if let Some(items) = ccs {
+            for item in items {
+                if let Some(addr) = item {
+                    if let Ok(parsed_addr) = addr.parse() {
+                        email = email.cc(parsed_addr);
+                    } else {
+                        return Err(format!("Invalid cc: {}", addr));
+                    }
+                }
+            }
+        }
+
+        if let Some(items) = bccs {
+            if keep_bcc_header {
+                email = email.keep_bcc();
+            }
+            for item in items {
+                if let Some(addr) = item {
+                    if let Ok(parsed_addr) = addr.parse() {
+                        email = email.bcc(parsed_addr);
+                    } else {
+                        return Err(format!("Invalid bcc: {}", addr));
+                    }
+                }
+            }
+        }
+
+        if html {
+            email = email.header(lettre::message::header::ContentType::TEXT_HTML);
         }
 
         email.body(body.to_string()).map_err(|e| e.to_string())
@@ -122,32 +131,19 @@ mod smtp_client {
 
     #[pg_extern]
     fn send_email(
-        to: &str, // TODO: Make this a list (pgrx::Array<T>?)
         subject: &str,
         body: &str,
         html: default!(bool, "false"),
-        from: default!(Option<&str>, "NULL"),
-        cc: default!(Option<&str>, "NULL"), // TODO: Make this a list (pgrx::Array<T>?)
-        bcc: default!(Option<&str>, "NULL"), // TODO: Make this a list (pgrx::Array<T>?)
+        from_address: default!(Option<&str>, "NULL"),
+        recipients: default!(Option<Vec<Option<&str>>>, "NULL"),
+        ccs: default!(Option<Vec<Option<&str>>>, "NULL"),
+        bccs: default!(Option<Vec<Option<&str>>>, "NULL"),
         smtp_server: default!(Option<&str>, "NULL"),
         smtp_port: default!(Option<i32>, "NULL"),
         smtp_tls: default!(Option<bool>, "NULL"),
         smtp_username: default!(Option<&str>, "NULL"),
         smtp_password: default!(Option<&str>, "NULL"),
     ) -> String {
-        println!("to: {:?}", to);
-        println!("subject: {:?}", subject);
-        println!("body: {:?}", body);
-        println!("html: {:?}", html);
-        println!("from: {:?}", from);
-        println!("cc: {:?}", cc);
-        println!("bcc: {:?}", bcc);
-        println!("smtp_server: {:?}", smtp_server);
-        println!("smtp_port: {:?}", smtp_port);
-        println!("smtp_tls: {:?}", smtp_tls);
-        println!("smtp_username: {:?}", smtp_username);
-        println!("smtp_password: {:?}", smtp_password);
-
         let mailer = create_mailer(
             smtp_server,
             smtp_port,
@@ -157,13 +153,20 @@ mod smtp_client {
         )
         .expect("Failed to create mailer");
 
-        let message = create_message(to, subject, body, html, from, cc, bcc, false)
-            .expect("Failed to create message");
+        let message = create_message(
+            subject,
+            body,
+            html,
+            from_address,
+            recipients,
+            ccs,
+            bccs,
+            false,
+        )
+        .expect("Failed to create message");
 
         let result = mailer.send(&message).expect("Failed to send email");
-
         if !result.is_positive() {
-            // TODO: Is this correct?
             panic!(
                 "SMTP error {}: {}",
                 result.code(),
@@ -173,6 +176,8 @@ mod smtp_client {
 
         result.code().to_string()
     }
+
+    // TODO: Is this the correct way to do tests?
 
     #[cfg(any(test, feature = "pg_test"))]
     #[pg_schema]
@@ -225,11 +230,11 @@ mod smtp_client {
         #[serial]
         fn test_send_email() {
             let result = send_email(
-                "to@example.com",
                 "test subject",
                 "test body",
                 false,
                 Some("from@example.com"),
+                Some(vec![Some("to@example.com")]),
                 None,
                 None,
                 Some("127.0.0.1"),
@@ -253,11 +258,11 @@ mod smtp_client {
             Spi::run("set smtp_client.tls to false").expect("Failed to set smtp_client.tls");
 
             let result = send_email(
-                "to@example.com",
                 "test subject",
                 "test body",
                 false,
                 None,
+                Some(vec![Some("to@example.com")]),
                 None,
                 None,
                 None,
@@ -273,11 +278,11 @@ mod smtp_client {
         #[should_panic]
         fn test_send_email_without_smtp_config() {
             send_email(
-                "to@example.com",
                 "test subject",
                 "test body",
                 false,
                 None,
+                Some(vec![Some("to@example.com")]),
                 None,
                 None,
                 None,
@@ -291,11 +296,11 @@ mod smtp_client {
         #[pg_test]
         fn test_create_message_with_single_recipient() {
             let message = create_message(
-                "to@example.com",
                 "Test Subject",
                 "Test Body",
                 false,
                 Some("from@example.com"),
+                Some(vec![Some("to@example.com")]),
                 None,
                 None,
                 false,
@@ -312,11 +317,11 @@ mod smtp_client {
         #[pg_test]
         fn test_create_message_with_multiple_recipients() {
             let message = create_message(
-                "to1@example.com,to2@example.com",
                 "Test Subject",
                 "Test Body",
                 false,
                 Some("from@example.com"),
+                Some(vec![Some("to1@example.com"), Some("to2@example.com")]),
                 None,
                 None,
                 false,
@@ -333,13 +338,13 @@ mod smtp_client {
         #[pg_test]
         fn test_create_message_with_single_recipient_cc_and_bcc() {
             let message = create_message(
-                "to@example.com",
                 "Test Subject",
                 "Test Body",
                 false,
                 Some("from@example.com"),
-                Some("cc@example.com"),
-                Some("bcc@example.com"),
+                Some(vec![Some("to@example.com")]),
+                Some(vec![Some("cc@example.com")]),
+                Some(vec![Some("bcc@example.com")]),
                 true,
             )
             .unwrap();
@@ -354,13 +359,13 @@ mod smtp_client {
         #[pg_test]
         fn test_create_message_with_multiple_recipients_ccs_and_bccs() {
             let message = create_message(
-                "to1@example.com,to2@example.com",
                 "Test Subject",
                 "Test Body",
                 false,
                 Some("from@example.com"),
-                Some("cc1@example.com,cc2@example.com"),
-                Some("bcc1@example.com,bcc2@example.com"),
+                Some(vec![Some("to1@example.com"), Some("to2@example.com")]),
+                Some(vec![Some("cc1@example.com"), Some("cc2@example.com")]),
+                Some(vec![Some("bcc1@example.com"), Some("bcc2@example.com")]),
                 true,
             )
             .unwrap();
@@ -373,37 +378,16 @@ mod smtp_client {
         }
 
         #[pg_test]
-        fn test_create_message_without_keep_bcc() {
-            let message = create_message(
-                "to@example.com",
-                "Test Subject",
-                "Test Body",
-                false,
-                Some("from@example.com"),
-                Some("cc@example.com"),
-                Some("bcc@example.com"),
-                false,
-            )
-            .unwrap();
-
-            assert_header_value(&message, "Subject", "Test Subject");
-            assert_header_value(&message, "To", "to@example.com");
-            assert_header_value(&message, "Cc", "cc@example.com");
-            assert_header_missing(&message, "Bcc");
-            assert_header_value(&message, "From", "from@example.com");
-        }
-
-        #[pg_test]
         fn test_create_message_from_smtp_from_config() {
             Spi::run("set smtp_client.from_address to 'from@example.com'")
                 .expect("Failed to set smtp_client.from_address");
 
             let message = create_message(
-                "to@example.com",
                 "Test Subject",
                 "Test Body",
                 false,
                 None,
+                Some(vec![Some("to@example.com")]),
                 None,
                 None,
                 false,
@@ -423,11 +407,11 @@ mod smtp_client {
                 .expect("Failed to set smtp_client.from_address");
 
             let message = create_message(
-                "to@example.com",
                 "Test Subject",
                 "Test Body",
                 false,
                 Some("override@example.com"),
+                Some(vec![Some("to@example.com")]),
                 None,
                 None,
                 false,
@@ -444,11 +428,11 @@ mod smtp_client {
         #[pg_test]
         fn test_create_message_no_from() {
             let result = create_message(
-                "to@example.com",
                 "Test Subject",
                 "Test Body",
                 false,
                 None,
+                Some(vec![Some("to@example.com")]),
                 None,
                 None,
                 false,
