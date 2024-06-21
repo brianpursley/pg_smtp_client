@@ -229,7 +229,7 @@ mod smtp_client {
                 None,
                 None,
                 Some("127.0.0.1"),
-                Some(2525),
+                Some(8025),
                 Some(false),
                 None,
                 None,
@@ -244,7 +244,7 @@ mod smtp_client {
                 .expect("Failed to set smtp_client.from_address");
             Spi::run("set smtp_client.server to '127.0.0.1'")
                 .expect("Failed to set smtp_client.server");
-            Spi::run("set smtp_client.port to 2525").expect("Failed to set smtp_client.port");
+            Spi::run("set smtp_client.port to 8025").expect("Failed to set smtp_client.port");
             Spi::run("set smtp_client.tls to false").expect("Failed to set smtp_client.tls");
 
             let result = send_email(

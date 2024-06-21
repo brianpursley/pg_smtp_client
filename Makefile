@@ -1,4 +1,5 @@
 PYTHON := $(shell command -v python3 || command -v python || echo "none")
+PIP3 := $(shell command -v pip3 || command -v pip || echo "none")
 
 .PHONY: build
 build:
@@ -12,12 +13,11 @@ init:
 
 .PHONY: test
 test:
-	@if [ "$(PYTHON)" = "none" ]; then \
-		echo >&2 "Error: python3 is required."; \
-		exit 1; \
-	fi
-	@trap 'kill `cat /tmp/smtpd.pid`' EXIT; \
-	$(PYTHON) -W ignore::DeprecationWarning -m smtpd -n -c DebuggingServer 127.0.0.1:2525 & echo $$! > /tmp/smtpd.pid; \
+	@if [ "$(PYTHON)" = "none" ]; then echo >&2 "Error: python3 is required."; exit 1; fi
+	@if [ "$(PIP)" = "none" ]; then echo >&2 "Error: pip3 is required."; exit 1; fi
+	$(PIP3) install aiosmtpd
+	trap 'kill `cat /tmp/smtpd.pid`' EXIT; \
+	$(PYTHON) -m aiosmtpd -n & echo $$! > /tmp/smtpd.pid; \
 	cargo pgrx test pg16
 
 .PHONY: run
