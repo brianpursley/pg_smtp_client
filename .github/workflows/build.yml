@@ -15,70 +15,25 @@ on:
       - README.md
       - CONTRIBUTING.md
     
-env:
-  RUST_TOOLCHAIN_VERSION: 1.77.2
-
 jobs:
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          toolchain: ${{ env.RUST_TOOLCHAIN_VERSION }}
-          components: clippy, rustfmt
-      - run: cargo fmt --check
-      - run: cargo clippy
-  
-  init:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          toolchain: ${{ env.RUST_TOOLCHAIN_VERSION }}
-      - name: Cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.pgrx
-            ~/.cargo
-          key: ${{ runner.os }}-deps
-      - run: make init
-
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          toolchain: ${{ env.RUST_TOOLCHAIN_VERSION }}
-      - name: Cache pgrx
-        uses: actions/cache@v4
-        with:
-          path: /home/runner/.pgrx
-          key: ${{ runner.os }}-pgrx
-      - name: Cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.pgrx
-            ~/.cargo
-          key: ${{ runner.os }}-deps
-      - run: make test
-  
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          toolchain: ${{ env.RUST_TOOLCHAIN_VERSION }}
-      - name: Cache
-        uses: actions/cache@v4
+          toolchain: 1.77.2
+          components: clippy, rustfmt
+      - uses: actions/setup-python@v5
+      - uses: actions/cache@v4
         with:
           path: |
             ~/.pgrx
             ~/.cargo
           key: ${{ runner.os }}-deps
+      - run: cargo fmt --check
+      - run: cargo install --locked cargo-pgrx 
+      - run: cargo clippy
+      - run: cargo pgrx init --pg16 download
+      - run: make test
       - run: make build
