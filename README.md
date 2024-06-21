@@ -24,24 +24,24 @@ Use the `smtp_client.send_email()` function to send an email.
 
 ### Function Parameters
 
-| Parameter | Type | Description | Default Configurable |
+| Parameter | Type | Description | System Configuration (Optional) |
 | --- | --- | --- | --- |
 | subject | text | The subject of the email | |
 | body | text | The body of the email | |
-| html | boolean | Whether the body is HTML or plain text | |
-| from | text | The from email address | Yes |
+| html | boolean | Whether the body is HTML (true) or plain text (false) | |
+| from_address | text | The from email address | `smtp_client.from_address` |
 | recipients | text[] | The email addresses of the recipients | |
 | ccs | text[] | The email addresses to CCs | |
 | bccs | text[] | The email addresses to BCCs | |
-| smtp_server | text | The SMTP server to use | Yes |
-| smtp_port | integer | The port of the SMTP server | Yes |
-| smtp_tls | boolean | Whether to use TLS | Yes |
-| smtp_username | text | The username for the SMTP server | Yes |
-| smtp_password | text | The password for the SMTP server | Yes |
+| smtp_server | text | The SMTP server to use | `smtp_client.server` |
+| smtp_port | integer | The port of the SMTP server | `smtp_client.port` |
+| smtp_tls | boolean | Whether to use TLS | `smtp_client.tls` |
+| smtp_username | text | The username for the SMTP server | `smtp_client.username` |
+| smtp_password | text | The password for the SMTP server | `smtp_client.password` |
 
 ### Default Configuration
 
-You can configure default values for some of the parameters like this:
+You can configure the following system-wide default values for some of the parameters (as indiciated in the table above) like this:
 
 ```
 ALTER SYSTEM SET smtp_client.server TO 'smtp.example.com';
@@ -53,7 +53,7 @@ ALTER SYSTEM SET smtp_client.from_address TO 'from@example.com';
 SELECT pg_reload_conf();
 ```
 
-### Examples
+### Usage Examples
 
 Send an email:
 ```sql
