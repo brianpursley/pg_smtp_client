@@ -25,15 +25,21 @@ jobs:
           toolchain: 1.77.2
           components: clippy, rustfmt
       - uses: actions/setup-python@v5
-      - uses: actions/cache@v4
+        with:
+          python-version: '3.x'
+      - uses: actions/cache@v3
         with:
           path: |
             ~/.pgrx
-            ~/.cargo
-          key: ${{ runner.os }}-deps
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - run: cargo fmt --check
       - run: cargo install --locked cargo-pgrx 
-      - run: cargo clippy
       - run: cargo pgrx init --pg16 download
+      - run: cargo clippy
       - run: make test
       - run: make build
