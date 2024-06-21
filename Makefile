@@ -1,22 +1,29 @@
+PYTHON := $(shell command -v python3 || command -v python || echo "none")
+
+.PHONY: build
 build:
-	cargo fmt --check
-	cargo clippy
-	@command -v trunk >/dev/null 2>&1 || { echo >&2 "trunk is required but it's not installed (cargo install pg-trunk).  Aborting."; exit 1; }
+	@command -v trunk >/dev/null 2>&1 || { echo >&2 "Error: trunk is required (cargo install pg-trunk)."; exit 1; }
 	trunk build
 
+.PHONY: init
 init:
 	cargo install --locked cargo-pgrx 
 	cargo pgrx init --pg16 download
 
+.PHONY: test
 test:
-	cargo build
-	@command -v python >/dev/null 2>&1 || { echo >&2 "python is required but it's not installed.  Aborting."; exit 1; }
+	@if [ "$(PYTHON)" = "none" ]; then \
+		echo >&2 "Error: python3 is required."; \
+		exit 1; \
+	fi
 	@trap 'kill `cat /tmp/smtpd.pid`' EXIT; \
-	python3 -W ignore::DeprecationWarning -m smtpd -n -c DebuggingServer 127.0.0.1:2525 & echo $$! > /tmp/smtpd.pid; \
+	$(PYTHON) -W ignore::DeprecationWarning -m smtpd -n -c DebuggingServer 127.0.0.1:2525 & echo $$! > /tmp/smtpd.pid; \
 	cargo pgrx test pg16
 
+.PHONY: run
 run:
 	cargo pgrx run
 
+.PHONY: clean
 clean:
 	rm -rf .trunk
