@@ -57,6 +57,7 @@ mod smtp_client {
         Ok(mailer.build())
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn create_message(
         subject: &str,
         body: &str,
@@ -83,25 +84,21 @@ mod smtp_client {
         }
 
         if let Some(items) = recipients {
-            for item in items {
-                if let Some(addr) = item {
-                    if let Ok(parsed_addr) = addr.parse() {
-                        email = email.to(parsed_addr);
-                    } else {
-                        return Err(format!("Invalid to: {}", addr));
-                    }
+            for addr in items.into_iter().flatten() {
+                if let Ok(parsed_addr) = addr.parse() {
+                    email = email.to(parsed_addr);
+                } else {
+                    return Err(format!("Invalid to: {}", addr));
                 }
             }
         }
 
         if let Some(items) = ccs {
-            for item in items {
-                if let Some(addr) = item {
-                    if let Ok(parsed_addr) = addr.parse() {
-                        email = email.cc(parsed_addr);
-                    } else {
-                        return Err(format!("Invalid cc: {}", addr));
-                    }
+            for addr in items.into_iter().flatten() {
+                if let Ok(parsed_addr) = addr.parse() {
+                    email = email.cc(parsed_addr);
+                } else {
+                    return Err(format!("Invalid cc: {}", addr));
                 }
             }
         }
@@ -110,13 +107,11 @@ mod smtp_client {
             if keep_bcc_header {
                 email = email.keep_bcc();
             }
-            for item in items {
-                if let Some(addr) = item {
-                    if let Ok(parsed_addr) = addr.parse() {
-                        email = email.bcc(parsed_addr);
-                    } else {
-                        return Err(format!("Invalid bcc: {}", addr));
-                    }
+            for addr in items.into_iter().flatten() {
+                if let Ok(parsed_addr) = addr.parse() {
+                    email = email.bcc(parsed_addr);
+                } else {
+                    return Err(format!("Invalid bcc: {}", addr));
                 }
             }
         }
@@ -129,6 +124,7 @@ mod smtp_client {
     }
 
     #[pg_extern]
+    #[allow(clippy::too_many_arguments)]
     fn send_email(
         subject: &str,
         body: &str,

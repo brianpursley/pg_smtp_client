@@ -1,6 +1,8 @@
 PGRX_POSTGRES ?= pg16
 
 build:
+	cargo fmt --check
+	cargo clippy
 	trunk build
 
 init:
@@ -13,9 +15,6 @@ test:
 	@trap 'kill `cat /tmp/smtpd.pid`' EXIT; \
 	python3 -W ignore::DeprecationWarning -m smtpd -n -c DebuggingServer 127.0.0.1:2525 & echo $$! > /tmp/smtpd.pid; \
 	cargo pgrx test $(PGRX_POSTGRES)
-
-fmt:
-	cargo fmt
 
 run:
 	cargo pgrx run
