@@ -2,6 +2,22 @@
 
 A Postgres extension to send emails using SMTP.
 
+## Installation
+
+### Install using Trunk
+
+```shell
+trunk install pg_smtp_client
+```
+
+### Enabling the extension
+
+Connect to postgres and run the following command.
+
+```sql
+CREATE EXTENSION IF NOT EXISTS pg_smtp_client CASCADE;
+```
+
 ## Usage
 
 Use the `smtp_client.send_email()` function to send an email.
@@ -38,10 +54,6 @@ SELECT pg_reload_conf();
 ```
 
 ### Examples
-
-```sql
-CREATE EXTENSION pg_smtp_client;
-```
 
 Send an email:
 ```sql

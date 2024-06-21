@@ -9,7 +9,6 @@ pub extern "C" fn _PG_init() {
     guc::init();
 }
 
-#[pg_schema]
 mod smtp_client {
     use super::*;
     use lettre::transport::smtp::authentication::Credentials;
@@ -177,13 +176,10 @@ mod smtp_client {
         result.code().to_string()
     }
 
-    // TODO: Is this the correct way to do tests?
-
     #[cfg(any(test, feature = "pg_test"))]
     #[pg_schema]
     mod tests {
         use super::*;
-        use serial_test::serial;
         use std::collections::HashMap;
 
         fn extract_headers(message: &Message) -> HashMap<String, String> {
@@ -227,7 +223,6 @@ mod smtp_client {
         }
 
         #[pg_test]
-        #[serial]
         fn test_send_email() {
             let result = send_email(
                 "test subject",
@@ -248,7 +243,6 @@ mod smtp_client {
         }
 
         #[pg_test]
-        #[serial]
         fn test_send_email_with_smtp_config() {
             Spi::run("set smtp_client.from_address to 'from@example.com'")
                 .expect("Failed to set smtp_client.from_address");
