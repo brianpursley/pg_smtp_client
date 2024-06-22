@@ -22,22 +22,21 @@ mod smtp_client {
         smtp_username: Option<&str>,
         smtp_password: Option<&str>,
     ) -> Result<SmtpTransport, String> {
-        let Some(server) = smtp_server.map_or_else(guc::get_smtp_server, |x| Some(x.to_string()))
-        else {
-            return Err("SMTP server not provided and no default configured".to_string());
-        };
+        let server = smtp_server
+            .map_or_else(guc::get_smtp_server, |x| Some(x.to_string()))
+            .ok_or("SMTP server not provided and no default configured")?;
 
         let port = smtp_port.map_or_else(guc::get_smtp_port, |x| x as u16);
         let tls = smtp_tls.unwrap_or_else(guc::get_smtp_tls);
         let username = smtp_username.map_or_else(guc::get_smtp_username, |x| Some(x.to_string()));
         let password = smtp_password.map_or_else(guc::get_smtp_password, |x| Some(x.to_string()));
 
-        let mut mailer = SmtpTransport::relay(server.as_str())
+        let mut mailer = SmtpTransport::relay(&server)
             .map_err(|e| format!("Failed to create SMTP relay: {:?}", e))?
             .port(port);
 
         if tls {
-            let tls_parameters = TlsParameters::new(server)
+            let tls_parameters = TlsParameters::new(server.clone())
                 .map_err(|e| format!("Failed to create TLS parameters: {:?}", e))?;
             mailer = mailer.tls(Tls::Wrapper(tls_parameters));
         } else {

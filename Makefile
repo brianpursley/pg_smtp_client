@@ -1,6 +1,14 @@
 PYTHON := $(shell command -v python3 || command -v python || echo "none")
 PIP3 := $(shell command -v pip3 || command -v pip || echo "none")
 
+.PHONY: run
+run:
+	cargo pgrx run
+
+.PHONY: clean
+clean:
+	cargo clean
+	
 .PHONY: init
 init:
 	cargo install cargo-pgrx pg-trunk
@@ -19,15 +27,3 @@ test:
 	trap 'kill `cat /tmp/smtpd.pid`' EXIT; \
 	$(PYTHON) -m aiosmtpd -n & echo $$! > /tmp/smtpd.pid; \
 	cargo pgrx test pg16
-
-.PHONY: build
-build:
-	trunk build
-
-.PHONY: run
-run:
-	cargo pgrx run
-
-.PHONY: clean
-clean:
-	rm -rf .trunk
