@@ -32,16 +32,21 @@ jobs:
           components: clippy, rustfmt
       - uses: actions/cache@v4
         with:
+          path: ~/.pgrx/
+          key: ${{ runner.os }}-pgrx-${{ hashFiles('**/Cargo.toml') }}
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip/
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/Makefile') }}
+      - uses: actions/cache@v4
+        with:
           path: |
-            ~/.pgrx/
-            ~/.cache/pip/
             ~/.cargo/bin/
             ~/.cargo/registry/index/
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: ${{ runner.os }}-deps-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - run: make init
       - run: make lint
       - run: make test
-      - run: make build

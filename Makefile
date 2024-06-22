@@ -1,5 +1,6 @@
 PYTHON := $(shell command -v python3 || command -v python || echo "none")
 PIP3 := $(shell command -v pip3 || command -v pip || echo "none")
+PG_VERSION := 16
 
 .PHONY: run
 run:
@@ -12,7 +13,7 @@ clean:
 .PHONY: init
 init:
 	cargo install cargo-pgrx pg-trunk
-	cargo pgrx init --pg16 download
+	cargo pgrx init --pg$(PG_VERSION) download
 
 .PHONY: lint
 lint:
@@ -26,4 +27,4 @@ test:
 	$(PIP3) install aiosmtpd
 	trap 'kill `cat /tmp/smtpd.pid`' EXIT; \
 	$(PYTHON) -m aiosmtpd -n & echo $$! > /tmp/smtpd.pid; \
-	cargo pgrx test pg16
+	cargo pgrx test pg$(PG_VERSION)
