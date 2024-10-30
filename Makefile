@@ -12,7 +12,7 @@ clean:
 	
 .PHONY: init
 init:
-	@cargo install --locked cargo-pgrx
+	@cargo install --locked cargo-pgrx@0.11.4
 	@cargo pgrx init --pg$(PG_VERSION) download
 
 .PHONY: lint
