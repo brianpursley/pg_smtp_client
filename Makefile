@@ -12,8 +12,8 @@ clean:
 	
 .PHONY: init
 init:
-	@cargo install --locked cargo-pgrx
-	@cargo pgrx init --pg$(PG_VERSION) download
+	@cargo install --locked cargo-pgrx@0.11.4
+	@if ! cargo pgrx info version pg$(PG_VERSION) >/dev/null 2>1; then cargo pgrx init --pg$(PG_VERSION) download; else echo "pg$(PG_VERSION) already installed"; fi
 
 .PHONY: lint
 lint:
