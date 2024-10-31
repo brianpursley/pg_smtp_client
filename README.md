@@ -1,5 +1,7 @@
 # pg_smtp_client
 
+[![CI](https://github.com/brianpursley/pg_smtp_client/actions/workflows/ci.yml/badge.svg)](https://github.com/brianpursley/pg_smtp_client/actions/workflows/ci.yml)
+
 A Postgres extension to send emails using SMTP.
 
 ## Installation
