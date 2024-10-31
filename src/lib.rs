@@ -15,12 +15,12 @@ mod smtp_client {
     use lettre::transport::smtp::client::{Tls, TlsParameters};
     use lettre::{Message, SmtpTransport, Transport};
 
-    fn create_mailer(
-        smtp_server: Option<&str>,
+    fn create_mailer<'a>(
+        smtp_server: Option<&'a str>,
         smtp_port: Option<i32>,
         smtp_tls: Option<bool>,
-        smtp_username: Option<&str>,
-        smtp_password: Option<&str>,
+        smtp_username: Option<&'a str>,
+        smtp_password: Option<&'a str>,
     ) -> Result<SmtpTransport, String> {
         let server = smtp_server
             .map_or_else(guc::get_smtp_server, |x| Some(x.to_string()))
@@ -57,14 +57,14 @@ mod smtp_client {
     }
 
     #[allow(clippy::too_many_arguments)]
-    fn create_message(
-        subject: &str,
-        body: &str,
+    fn create_message<'a>(
+        subject: &'a str,
+        body: &'a str,
         html: bool,
-        from_address: Option<&str>,
-        recipients: Option<Vec<Option<&str>>>,
-        ccs: Option<Vec<Option<&str>>>,
-        bccs: Option<Vec<Option<&str>>>,
+        from_address: Option<&'a str>,
+        recipients: Option<Vec<Option<String>>>,
+        ccs: Option<Vec<Option<String>>>,
+        bccs: Option<Vec<Option<String>>>,
         keep_bcc_header: bool,
     ) -> Result<Message, String> {
         let mut email = Message::builder().subject(subject);
@@ -83,7 +83,7 @@ mod smtp_client {
         }
 
         if let Some(items) = recipients {
-            for addr in items.into_iter().flatten() {
+            for addr in items.iter().flatten() {
                 if let Ok(parsed_addr) = addr.parse() {
                     email = email.to(parsed_addr);
                 } else {
@@ -93,7 +93,7 @@ mod smtp_client {
         }
 
         if let Some(items) = ccs {
-            for addr in items.into_iter().flatten() {
+            for addr in items.iter().flatten() {
                 if let Ok(parsed_addr) = addr.parse() {
                     email = email.cc(parsed_addr);
                 } else {
@@ -106,7 +106,7 @@ mod smtp_client {
             if keep_bcc_header {
                 email = email.keep_bcc();
             }
-            for addr in items.into_iter().flatten() {
+            for addr in items.iter().flatten() {
                 if let Ok(parsed_addr) = addr.parse() {
                     email = email.bcc(parsed_addr);
                 } else {
@@ -124,19 +124,19 @@ mod smtp_client {
 
     #[pg_extern]
     #[allow(clippy::too_many_arguments)]
-    fn send_email(
-        subject: &str,
-        body: &str,
+    fn send_email<'a>(
+        subject: &'a str,
+        body: &'a str,
         html: default!(bool, "false"),
-        from_address: default!(Option<&str>, "NULL"),
-        recipients: default!(Option<Vec<Option<&str>>>, "NULL"),
-        ccs: default!(Option<Vec<Option<&str>>>, "NULL"),
-        bccs: default!(Option<Vec<Option<&str>>>, "NULL"),
-        smtp_server: default!(Option<&str>, "NULL"),
+        from_address: default!(Option<&'a str>, "NULL"),
+        recipients: default!(Option<Vec<Option<String>>>, "NULL"),
+        ccs: default!(Option<Vec<Option<String>>>, "NULL"),
+        bccs: default!(Option<Vec<Option<String>>>, "NULL"),
+        smtp_server: default!(Option<&'a str>, "NULL"),
         smtp_port: default!(Option<i32>, "NULL"),
         smtp_tls: default!(Option<bool>, "NULL"),
-        smtp_username: default!(Option<&str>, "NULL"),
-        smtp_password: default!(Option<&str>, "NULL"),
+        smtp_username: default!(Option<&'a str>, "NULL"),
+        smtp_password: default!(Option<&'a str>, "NULL"),
     ) -> String {
         let mailer = create_mailer(
             smtp_server,
@@ -224,7 +224,7 @@ mod smtp_client {
                 "test body",
                 false,
                 Some("from@example.com"),
-                Some(vec![Some("to@example.com")]),
+                Some(vec![Some("to@example.com".to_string())]),
                 None,
                 None,
                 Some("127.0.0.1"),
@@ -251,7 +251,7 @@ mod smtp_client {
                 "test body",
                 false,
                 None,
-                Some(vec![Some("to@example.com")]),
+                Some(vec![Some("to@example.com".to_string())]),
                 None,
                 None,
                 None,
@@ -271,7 +271,7 @@ mod smtp_client {
                 "test body",
                 false,
                 None,
-                Some(vec![Some("to@example.com")]),
+                Some(vec![Some("to@example.com".to_string())]),
                 None,
                 None,
                 None,
@@ -289,7 +289,7 @@ mod smtp_client {
                 "Test Body",
                 false,
                 Some("from@example.com"),
-                Some(vec![Some("to@example.com")]),
+                Some(vec![Some("to@example.com".to_string())]),
                 None,
                 None,
                 false,
@@ -310,7 +310,10 @@ mod smtp_client {
                 "Test Body",
                 false,
                 Some("from@example.com"),
-                Some(vec![Some("to1@example.com"), Some("to2@example.com")]),
+                Some(vec![
+                    Some("to1@example.com".to_string()),
+                    Some("to2@example.com".to_string()),
+                ]),
                 None,
                 None,
                 false,
@@ -331,9 +334,9 @@ mod smtp_client {
                 "Test Body",
                 false,
                 Some("from@example.com"),
-                Some(vec![Some("to@example.com")]),
-                Some(vec![Some("cc@example.com")]),
-                Some(vec![Some("bcc@example.com")]),
+                Some(vec![Some("to@example.com".to_string())]),
+                Some(vec![Some("cc@example.com".to_string())]),
+                Some(vec![Some("bcc@example.com".to_string())]),
                 true,
             )
             .unwrap();
@@ -352,9 +355,18 @@ mod smtp_client {
                 "Test Body",
                 false,
                 Some("from@example.com"),
-                Some(vec![Some("to1@example.com"), Some("to2@example.com")]),
-                Some(vec![Some("cc1@example.com"), Some("cc2@example.com")]),
-                Some(vec![Some("bcc1@example.com"), Some("bcc2@example.com")]),
+                Some(vec![
+                    Some("to1@example.com".to_string()),
+                    Some("to2@example.com".to_string()),
+                ]),
+                Some(vec![
+                    Some("cc1@example.com".to_string()),
+                    Some("cc2@example.com".to_string()),
+                ]),
+                Some(vec![
+                    Some("bcc1@example.com".to_string()),
+                    Some("bcc2@example.com".to_string()),
+                ]),
                 true,
             )
             .unwrap();
@@ -376,7 +388,7 @@ mod smtp_client {
                 "Test Body",
                 false,
                 None,
-                Some(vec![Some("to@example.com")]),
+                Some(vec![Some("to@example.com".to_string())]),
                 None,
                 None,
                 false,
@@ -400,7 +412,7 @@ mod smtp_client {
                 "Test Body",
                 false,
                 Some("override@example.com"),
-                Some(vec![Some("to@example.com")]),
+                Some(vec![Some("to@example.com".to_string())]),
                 None,
                 None,
                 false,
@@ -421,7 +433,7 @@ mod smtp_client {
                 "Test Body",
                 false,
                 None,
-                Some(vec![Some("to@example.com")]),
+                Some(vec![Some("to@example.com".to_string())]),
                 None,
                 None,
                 false,
@@ -430,7 +442,7 @@ mod smtp_client {
             assert!(result.is_err());
             assert_eq!(
                 result.unwrap_err(),
-                format!("From address not provided and no default configured")
+                "From address not provided and no default configured"
             );
         }
     }

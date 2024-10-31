@@ -1,6 +1,10 @@
 PYTHON ?= $(shell which python3 || which python)
 PIP ?= $(shell which pip3 || which pip)
-PG_VERSION ?= 16
+PG_VERSION ?= pg17
+
+.PHONY: build
+build:
+	@cargo build
 
 .PHONY: run
 run:
@@ -12,13 +16,13 @@ clean:
 	
 .PHONY: init
 init:
-	@cargo install --locked cargo-pgrx@0.11.4
-	@if ! cargo pgrx info version pg$(PG_VERSION) >/dev/null 2>&1; then cargo pgrx init --pg$(PG_VERSION) download; else echo "pg$(PG_VERSION) already installed"; fi
+	@cargo install --locked cargo-pgrx@0.12.7
+	@if ! cargo pgrx info version $(PG_VERSION) >/dev/null 2>&1; then cargo pgrx init --$(PG_VERSION) download; else echo "$(PG_VERSION) already installed"; fi
 
 .PHONY: lint
 lint:
 	@cargo fmt --check
-	@cargo clippy
+	@cargo clippy --no-default-features --features $(PG_VERSION)
 
 .PHONY: test
 test:
@@ -27,4 +31,4 @@ test:
 	@$(PIP) install aiosmtpd
 	@trap 'kill `cat /tmp/smtpd.pid`' EXIT; \
 	$(PYTHON) -m aiosmtpd -n & echo $$! > /tmp/smtpd.pid; \
-	cargo pgrx test pg$(PG_VERSION)
+	cargo pgrx test
